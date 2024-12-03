@@ -2,9 +2,7 @@ const Hapi = require('@hapi/hapi');
 const Jwt = require('@hapi/jwt');
 require('dotenv').config();
 
-const authRoutes = require('./routes/authRoutes');
-const profileRoutes = require('./routes/profileRoutes');
-const diagnoseRoutes = require('./routes/diagnoseRoutes');
+const routes = require('./routes/routes');
 
 const init = async () => {
     const server = Hapi.server({
@@ -43,7 +41,7 @@ const init = async () => {
     server.auth.default('jwt');
 
     // Register routes
-    server.route([...authRoutes, ...profileRoutes, ...diagnoseRoutes]);
+    server.route([...routes]);
 
     await server.start();
     console.log(`Server running on ${server.info.uri}`);

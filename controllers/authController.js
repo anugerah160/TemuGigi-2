@@ -19,6 +19,15 @@ const generateUniqueID = async (prefix) => {
 
 const registerPatient = async (request, h) => {
     const { email, password, name, gender, birth_date, city, phone } = request.payload;
+
+    // Periksa apakah email sudah terdaftar
+    const emailCheckQuery = `SELECT COUNT(*) AS count FROM Users WHERE Email = ?`;
+    const [emailCheckResult] = await pool.query(emailCheckQuery, [email]);
+
+    if (emailCheckResult[0].count > 0) {
+        return h.response({ message: 'Email telah terdaftar' }).code(400);
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate ID unik untuk Patient
@@ -34,6 +43,18 @@ const registerPatient = async (request, h) => {
 
 const registerCoass = async (request, h) => {
     const { email, password, name, gender, birth_date, ktp, nim, appointment_place, university, phone } = request.payload;
+
+    // Periksa apakah email, KTP, atau NIM sudah terdaftar
+    const checkQuery = `
+        SELECT COUNT(*) AS count 
+        FROM Users 
+        WHERE Email = ? OR Ktp = ? OR Nim = ?`;
+    const [checkResult] = await pool.query(checkQuery, [email, ktp, nim]);
+
+    if (checkResult[0].count > 0) {
+        return h.response({ message: 'Email, KTP, atau NIM telah terdaftar' }).code(400);
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate ID unik untuk Coass
@@ -46,6 +67,7 @@ const registerCoass = async (request, h) => {
     await pool.query(query, [coassID, email, hashedPassword, name, gender, birth_date, ktp, nim, appointment_place, university, phone]);
     return h.response({ message: 'Co-Ass registered successfully', id: coassID }).code(201);
 };
+
 
 const login = async (request, h) => {
     try {
