@@ -1,5 +1,5 @@
-const pool = require('../utils/database');
 const { uploadToGCS, deleteFromGCS } = require('../services/gcsService');
+const pool = require('../utils/database');
 
 const getProfile = async (request, h) => {
     const userId = request.auth.credentials.id;

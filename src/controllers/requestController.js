@@ -36,11 +36,39 @@ const getPendingRequests = async (request, h) => {
     const coass_id = request.auth.credentials.id;
 
     const [requests] = await pool.query(
-        `SELECT Request_id, Patient_id, Requested_at FROM Requests WHERE Coass_id = ? AND Status = 'Pending'`,
+        `SELECT U.Name, U.Id, R.Request_id, D.Img_disease, D.Disease_name, 
+        D.Description, R.Requested_at FROM Requests R JOIN Users U ON 
+        R.Patient_id = U.Id JOIN Diagnose D ON U.Id = D.Id_patient 
+        WHERE R.Coass_id = ? AND R.Status = 'Pending'`,
         [coass_id]
     );
 
     return h.response(requests).code(200);
+};
+
+const getAcceptedRequests = async (request, h) => {
+    const coass_id = request.auth.credentials.id;
+
+    try {
+        const [acceptedRequests] = await pool.query(
+            `SELECT U.Name, U.Id, R.Request_id, D.Img_disease, D.Disease_name, 
+            D.Description, R.Requested_at 
+            FROM Requests R 
+            JOIN Users U ON R.Patient_id = U.Id 
+            JOIN Diagnose D ON U.Id = D.Id_patient 
+            WHERE R.Coass_id = ? AND R.Status = 'Accepted'`,
+            [coass_id]
+        );
+
+        if (acceptedRequests.length === 0) {
+            return h.response({ message: "No accepted requests found." }).code(404);
+        }
+
+        return h.response(acceptedRequests).code(200);
+    } catch (error) {
+        console.error(error);
+        return h.response({ message: "Failed to fetch accepted requests." }).code(500);
+    }
 };
 
 const reviewRequest = async (request, h) => {
@@ -58,4 +86,4 @@ const reviewRequest = async (request, h) => {
     return h.response({ message: 'Request status updated successfully.' }).code(200);
 };
 
-module.exports = { requestMeeting, getPendingRequests, reviewRequest, verifyRole };
+module.exports = { requestMeeting, getPendingRequests, reviewRequest, getAcceptedRequests, verifyRole };

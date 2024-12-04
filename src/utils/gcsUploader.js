@@ -26,7 +26,7 @@ const uploadFileToGCS = async (buffer, originalName) => {
     // Upload file ke GCS
     await file.save(buffer, {
       metadata: {
-        contentType: 'image/png'// Sesuaikan dengan tipe file
+        contentType: file.mimetype, // Ambil tipe MIME dari file
       },
     });
 

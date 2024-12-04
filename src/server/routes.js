@@ -83,6 +83,17 @@ module.exports = [
         },
     },
     {
+        method: 'GET',
+        path: '/accepted-requests',
+        handler: requestController.getAcceptedRequests,
+        options: {
+            auth: 'jwt',
+            pre: [
+                { method: requestController.verifyRole('Coass') },
+            ],
+        },
+    },
+    {
         method: 'PUT',
         path: '/review-request',
         handler: requestController.reviewRequest,
