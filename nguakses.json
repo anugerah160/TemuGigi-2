@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "temugigi",
+  "private_key_id": "3e95535278398829b889a524a77313e6674e2aa4",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDcGj+5oj1HBkAc\nl/x2jFlNTRHVpcHo7A5Dka/RsVOPUJv3/wSOKFapvILJTrJfJ3FT4zSMh2vjpPdc\n82/ti5z0cjMRpGAAahgWPJeXVxHVi7sUeQ0yOwXSygOig15bbbqOZY6TdjkRXEyD\nCl9JFryno75BGuyR7UAw/ypazNrzmTc4rRO4OlJCUKwohKBsOFnRGQHELIveYMHU\nIRUNIrC34GxaqVjyTpw54sxcossYnHFLK/1l5LykA4ktAZ4B/ISRopEGwO+632x4\nUdihaSlj7voVPwz0g/EPepxHk0WT+c9Z9lLs4Yc18Z3bFys9GJ7i1RPDS2fkQkLv\nLLiVBKkxAgMBAAECggEAERSk5h0n6/l5U3a8f/8phXkSBZ5Sz2Z1P2tghXGBUm1/\nIxZaZkVNX2f6jtCBgWakUe4fg3nVZrHERAV8xcaYQDSWD7wNuq6BDsW2PmeCgevR\ncXfo7SFdNPPaJxwSgB4idH8/WqR5roYXBnLRPPDrpEdN4gvKuNLccMj2gpwj8DQq\nd4ThJwlJFJ2LFU7flPct810B76Mc+imWQvYO8zTVJV+yiUYKrKA35v3eZIsWpDr1\nJZ0UxJVCYbRHWGVSQyKegSGWzie6/riKHf7M3Uo1n/j94MvJadu4vSnJx8VQEc89\n1vFgQrXnoCjMTrytFG94OuQC3v/xGmbSrPoQGSz4eQKBgQDwDh2tOPGl7LsK8HcB\nEjXCYbdJZbUOzRmXBmZ53YpPVtHFTm8YQtu/9FNugO1uAZMoFD1qGl9+sUtHtWvm\n3mefgH/vnz4y7lkk/k+OE70HGtS1m43D5u1JCrmwdqq/5d4f/2hT7haGeIl3KBQO\nZzthRvdOqTIUSGf6EGe9ychy+QKBgQDquNwqe4/qzKJfntPv7yqLE1hrELb+W/Qp\nWQdkIxQ08pqYk+jDG9bGY++6JxypYFHbaREzFt5BetAC94Kny46e+YkqxSoTmT/z\nJns6sxFk87ixgAhkmSFrijxT5oxAsG1COs0OYyW3NyJs9AiqQO59uXOPu7KmTIvq\nKVX0ZUO9+QKBgQCgJEqX7I0Ia8y7l39ML6G9cwKa7EbFAP45SgPC+I/0La7zOUfT\nn4aJn6yo40mBQXuyGQ5/Yeii1BOsWtMIyQXH2il+6XTM9URy8VSRK4nG25dbL9J7\nBer19zm5BvER438zSWeH1iUgv/i0jQAUO7nZQ0ZoK2dFMKhsodUTPzGBwQKBgQDC\n2kWDSuIVVF1zLcHZC91waNXcw5p2G9XcQVkeavSKY9+szBTNa53nQe0vxupHPXuW\nvmkV1WUaTJ7D577iFtzF4ndZNyYP8QeijY59E0xcVus7BwNwp6KTyMT+DYTe6tc4\nxOGXkP0tVKrScd+DnrWdT0e8yV+sKB16fWgqo6oR2QKBgFX9jTuefIZ7zsh0PF+a\nPXLvnDori/NnbIBoJ7CdCiQ8BVSqM1iFFZDEr0QdocVMvzsfWRzNQ23rVBph4opH\n7Xs6u6Jlszn1cx/GpfXBc2q8iPCrX5IKsgVpj5lc14umLXTvuQa9yNLrf6V3z+AU\nrndir9gGnYLjjrCaXxqDXSN2\n-----END PRIVATE KEY-----\n",
+  "client_email": "pengupload-artifact@temugigi.iam.gserviceaccount.com",
+  "client_id": "103053735591038630956",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/pengupload-artifact%40temugigi.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
