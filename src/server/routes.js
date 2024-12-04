@@ -16,6 +16,7 @@ module.exports = [
     //PredictController
     { method: 'GET', path: '/list-coass', handler: predictController.listCoass },
     { method: 'GET', path: '/list-patients', handler: predictController.listPatients },
+    { method: 'GET', path: '/predict', handler: predictController.getPredict },
     {
         method: 'POST',
         path: '/predict',

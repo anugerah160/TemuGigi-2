@@ -1,5 +1,6 @@
 const { uploadToGCS, deleteFromGCS } = require('../services/gcsService');
 const pool = require('../utils/database');
+const crypto = require('crypto');
 
 const getProfile = async (request, h) => {
     const userId = request.auth.credentials.id;
@@ -56,8 +57,8 @@ const updatePicture = async (request, h) => {
     if (!request.file) {
       return h.response({ message: "No file uploaded" }).code(400);
     }
-
-    const newFileName = `profile-img/${userId}.jpg`; // Nama file baru
+    const randomString = crypto.randomBytes(2).toString('hex');
+    const newFileName = `profile-img/${randomString}-${userId}.jpg`; // Nama file baru
     const newImageUrl = await uploadToGCS(request.file.buffer, newFileName); // Upload ke GCS
 
     // Ambil data Img_profile pengguna sebelumnya

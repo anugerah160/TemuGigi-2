@@ -1,5 +1,29 @@
 const { uploadToGCS, deleteFromGCS } = require('../services/gcsService');
 const pool = require('../utils/database');
+const crypto = require('crypto');
+
+const getPredict = async (request, h) => {
+    try {
+        const patientId = request.auth.credentials.id; // Extract patient ID from JWT
+
+        // Query to get diagnoses for the patient
+        const [diagnoses] = await pool.query(
+            `SELECT Diagnosis_id, Id_patient, Img_disease, Disease_name, Description, Diagnosis_date, Model_version 
+             FROM Diagnose 
+             WHERE Id_patient = ?`,
+            [patientId]
+        );
+
+        if (diagnoses.length === 0) {
+            return h.response({ message: 'No diagnoses found for this patient.' }).code(404);
+        }
+
+        return h.response(diagnoses).code(200);
+    } catch (error) {
+        console.error('GET /predict Error:', error.message);
+        return h.response({ message: 'Internal Server Error' }).code(500);
+    }
+};
 
 const predictDisease = async (request, h) => {
     const id_patient = request.auth.credentials.id; // Extract Id_patient from JWT
@@ -10,11 +34,14 @@ const predictDisease = async (request, h) => {
     }
 
     try {
-        // Define new filename as Id_patient
-        const newFileName = `${id_patient}.jpg`;
+        // Generate a 4-character random string
+        const randomString = crypto.randomBytes(2).toString('hex'); // 2 bytes = 4 characters
+
+        // Define new filename as disease/<random-string><original-name>
+        const newFileName = `disease/${randomString}-${id_patient}.jpg`;
 
         // Upload new image to GCS
-        const newImageUrl = await uploadToGCS(img_disease.buffer, `disease/${newFileName}`);
+        const newImageUrl = await uploadToGCS(img_disease.buffer, newFileName);
 
         // Simulated ML model result
         const disease_name = 'Sample Disease';
@@ -57,6 +84,7 @@ const predictDisease = async (request, h) => {
     }
 };
 
+
 const listCoass = async (request, h) => {
     const query = `
         SELECT Id, Name, Gender, University, Appointment_Place, Phone, Img_profile 
@@ -83,4 +111,4 @@ const listPatients = async (request, h) => {
     return h.response(rows).code(200);
 };
 
-module.exports = { predictDisease, listCoass, listPatients };
+module.exports = { getPredict, predictDisease, listCoass, listPatients };
