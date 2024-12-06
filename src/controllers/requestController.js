@@ -61,7 +61,7 @@ const getAcceptedRequests = async (request, h) => {
         );
 
         if (acceptedRequests.length === 0) {
-            return h.response({ message: "No accepted requests found." }).code(404);
+            return h.response({ message: "No accepted requests found." }).code(200);
         }
 
         return h.response(acceptedRequests).code(200);

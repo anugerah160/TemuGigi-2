@@ -42,6 +42,7 @@ const getPatientSchedule = async (request, h) => {
                 Schedules.Schedule_id, 
                 Schedules.Appointment_date, 
                 Schedules.Appointment_place, 
+                Users.Img_profile AS Coass_Img, 
                 Users.Name AS Coass_name, 
                 Users.Phone AS Coass_phone, 
                 Users.University AS Coass_university

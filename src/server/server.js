@@ -1,7 +1,7 @@
 const Hapi = require('@hapi/hapi');
 const Jwt = require('@hapi/jwt');
 require('dotenv').config();
-
+// const loadModel = require('../controllers/predictController');
 const routes = require('./routes');
 
 const init = async () => {
