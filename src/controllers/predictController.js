@@ -2,6 +2,7 @@ const tf = require('@tensorflow/tfjs-node');
 const { uploadToGCS, deleteFromGCS } = require('../services/gcsService');
 const pool = require('../utils/database');
 const crypto = require('crypto');
+const moment = require('moment-timezone');
 
 // Fungsi untuk mendapatkan diagnosis pasien
 const getPredict = async (request, h) => {
@@ -33,7 +34,6 @@ const loadModel = async () => {
         try {
             const modelPath = './modelku/model.json'; // Path ke model TensorFlow
             model = await tf.loadGraphModel(`file://${modelPath}`);
-            console.log('Model loaded successfully');
         } catch (error) {
             console.error('Failed to load model:', error.message);
             throw new Error('Model loading error');
@@ -42,6 +42,7 @@ const loadModel = async () => {
 };
 
 const predictDisease = async (request, h) => {
+    
     const id_patient = request.auth.credentials.id; // ID pasien dari token JWT
     const img_disease = request.file; // File yang diunggah
 
@@ -58,38 +59,43 @@ const predictDisease = async (request, h) => {
 
         await loadModel(); // Memastikan model dimuat
 
-        // Generate nama file unik
-        const randomString = crypto.randomBytes(2).toString('hex');
-        const newFileName = `disease/${randomString}-${id_patient}.jpg`;
-
-        // Upload gambar ke Google Cloud Storage
-        const newImageUrl = await uploadToGCS(img_disease.buffer, newFileName);
-
         // Preprocessing gambar
         const tensor = tf.node
-            .decodeImage(img_disease.buffer, 3) // Decode image dengan 3 channel (RGB)
-            .resizeNearestNeighbor([224, 224]) // Resize menggunakan metode yang sama seperti Python
-            .expandDims(0) // Tambahkan dimensi batch
+            .decodeImage(img_disease.buffer, 3)
+            .resizeNearestNeighbor([224, 224])
+            .expandDims(0)
             .toFloat()
             .div(tf.scalar(255));
 
         // Prediksi menggunakan model
         const prediction = model.predict(tensor);
-        const scores = Array.from(await prediction.data()); // Konversi tensor ke array
-        const labels = ['Caries', 'Gingivitis', 'Mouth Ulcer', 'Noise', 'Tooth Discoloration'];
+        const scores = Array.from(await prediction.data());
+        const labels = ['Caries', 'Gingivitis', 'Mouth Ulcer', 'Random', 'Tooth Discoloration'];
         const maxScoreIndex = scores.indexOf(Math.max(...scores));
         const confidence = scores[maxScoreIndex];
         const disease_name = labels[maxScoreIndex];
-        const description =
-            disease_name === 'Noise'
-                ? 'Gambar tidak sesuai. Harap unggah gambar yang relevan dengan gigi.'
-                : `Diagnosis menunjukkan ${disease_name} dengan tingkat kepercayaan ${(
-                      confidence * 100
-                  ).toFixed(2)}%. Silakan konsultasi dengan Coass.`;
 
-        const model_version = 'v1.0';
+        // Jika hasil adalah "Random", gambar tidak diproses lebih lanjut
+        if (disease_name === 'Random') {
+            return h.response({
+                message: 'Model tidak dapat menganalisis. Harap unggah gambar lainnya.',
+            }).code(400);
+        }
 
-        // Periksa apakah sudah ada diagnosis sebelumnya
+        const description = `Diagnosis menunjukkan ${disease_name} dengan tingkat kepercayaan ${(confidence * 100).toFixed(2)}%.`;
+        const model_version = 'v1.1';
+
+        //Me Generate nama file unik
+        const randomString = crypto.randomBytes(2).toString('hex');
+        const newFileName = `disease/${randomString}-${id_patient}.jpg`;
+
+        //Upload gambar ke GCS
+        const newImageUrl = await uploadToGCS(img_disease.buffer, newFileName);
+
+        //Format SQL dengan zona waktu
+        const diagnosisDate = moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss'); 
+
+        //Checking apakah sudah ada diagnosis sebelumnya
         const [existingDiagnosis] = await pool.query(
             'SELECT Img_disease FROM Diagnose WHERE Id_patient = ?',
             [id_patient]
@@ -104,17 +110,17 @@ const predictDisease = async (request, h) => {
 
             // Update diagnosis
             await pool.query(
-                `UPDATE Diagnose 
-                 SET Img_disease = ?, Disease_name = ?, Description = ?, Diagnosis_date = NOW(), Model_version = ? 
+                `UPDATE Diagnose
+                 SET Img_disease = ?, Disease_name = ?, Description = ?, Diagnosis_date = ?, Model_version = ?
                  WHERE Id_patient = ?`,
-                [newImageUrl, disease_name, description, model_version, id_patient]
+                [newImageUrl, disease_name, description, diagnosisDate, model_version, id_patient]
             );
         } else {
             // Tambah diagnosis baru
             await pool.query(
-                `INSERT INTO Diagnose (Id_patient, Img_disease, Disease_name, Description, Diagnosis_date, Model_version) 
-                 VALUES (?, ?, ?, ?, NOW(), ?)`,
-                [id_patient, newImageUrl, disease_name, description, model_version]
+                `INSERT INTO Diagnose (Id_patient, Img_disease, Disease_name, Description, Diagnosis_date, Model_version)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [id_patient, newImageUrl, disease_name, description, diagnosisDate, model_version]
             );
         }
 
