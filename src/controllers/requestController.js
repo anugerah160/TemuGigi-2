@@ -1,4 +1,5 @@
 const pool = require('../utils/database');
+const { copyFileInGCS } = require('../services/gcsService');
 
 const verifyRole = (role) => {
     return (request, h) => {
@@ -8,6 +9,7 @@ const verifyRole = (role) => {
         return h.continue;
     };
 };
+
 
 const requestMeeting = async (request, h) => {
     const { coass_id } = request.payload;
@@ -23,23 +25,53 @@ const requestMeeting = async (request, h) => {
         return h.response({ message: 'You already have a pending or accepted request.' }).code(400);
     }
 
-    // Insert new request
-    await pool.query(
-        `INSERT INTO Requests (Patient_id, Coass_id, Status) VALUES (?, ?, 'Pending')`,
-        [patient_id, coass_id]
+    // Get the latest disease details for the patient from the Diagnose table
+    const [diagnoseDetails] = await pool.query(
+        `SELECT Img_disease, Disease_name, Description  
+         FROM Diagnose 
+         WHERE Id_patient = ? 
+         ORDER BY Diagnosis_date DESC 
+         LIMIT 1`,
+        [patient_id]
     );
 
-    return h.response({ message: 'Request submitted successfully.' }).code(201);
+    if (diagnoseDetails.length === 0) {
+        return h.response({ message: 'No diagnosis found for this patient.' }).code(400);
+    }
+
+    const { Img_disease, Disease_name, Description } = diagnoseDetails[0];
+
+    // Extract the file name from Img_disease URL
+    const filename = Img_disease.split('/').pop();
+    const sourcePath = `disease/${filename}`;
+    const destinationPath = `request/${filename}`;
+
+    try {
+        // Copy image from "disease" to "request" folder in GCS
+        const newImgUrl = await copyFileInGCS(sourcePath, destinationPath);
+
+        // Insert new request with updated Img_disease URL
+        await pool.query(
+            `INSERT INTO Requests (Patient_id, Coass_id, Status, Img_disease, Disease_name, Description)  
+             VALUES (?, ?, 'Pending', ?, ?, ?)`, 
+            [patient_id, coass_id, newImgUrl, Disease_name, Description]
+        );
+
+        return h.response({ message: 'Request submitted successfully.' }).code(201);
+    } catch (error) {
+        console.error('Error processing request:', error);
+        return h.response({ message: 'Failed to process the request.' }).code(500);
+    }
 };
+
 
 const getPendingRequests = async (request, h) => {
     const coass_id = request.auth.credentials.id;
 
     const [requests] = await pool.query(
-        `SELECT U.Name, U.Id, R.Request_id, D.Img_disease, D.Disease_name, 
-        D.Description, R.Requested_at FROM Requests R JOIN Users U ON 
-        R.Patient_id = U.Id JOIN Diagnose D ON U.Id = D.Id_patient 
-        WHERE R.Coass_id = ? AND R.Status = 'Pending'`,
+        `SELECT U.Name, U.Id, R.Request_id, R.Img_disease, R.Disease_name, 
+        R.Description, R.Requested_at FROM Requests R JOIN Users U ON 
+        R.Patient_id = U.Id WHERE R.Coass_id = ? AND R.Status = 'Pending'`,
         [coass_id]
     );
 
@@ -51,11 +83,10 @@ const getAcceptedRequests = async (request, h) => {
 
     try {
         const [acceptedRequests] = await pool.query(
-            `SELECT U.Name, U.Id, R.Request_id, D.Img_disease, D.Disease_name, 
-            D.Description, R.Requested_at 
+            `SELECT U.Name, U.Id, R.Request_id, R.Img_disease, R.Disease_name, 
+            R.Description, R.Requested_at 
             FROM Requests R 
-            JOIN Users U ON R.Patient_id = U.Id 
-            JOIN Diagnose D ON U.Id = D.Id_patient 
+            JOIN Users U ON R.Patient_id = U.Id
             WHERE R.Coass_id = ? AND R.Status = 'Accepted'`,
             [coass_id]
         );

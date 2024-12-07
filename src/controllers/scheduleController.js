@@ -13,6 +13,7 @@ const scheduleMeeting = async (request, h) => {
     const { request_id, appointment_date, appointment_place } = request.payload;
     const coass_id = request.auth.credentials.id;
 
+    // Validasi apakah request diterima
     const [requestData] = await pool.query(
         `SELECT * FROM Requests WHERE Request_id = ? AND Coass_id = ? AND Status = 'Accepted'`,
         [request_id, coass_id]
@@ -24,7 +25,17 @@ const scheduleMeeting = async (request, h) => {
 
     const patient_id = requestData[0].Patient_id;
 
-    // Insert schedule
+    // Cek apakah kombinasi Coass_id dan Patient_id sudah ada di tabel Schedules
+    const [existingSchedule] = await pool.query(
+        `SELECT * FROM Schedules WHERE Patient_id = ?`,
+        [patient_id]
+    );
+
+    if (existingSchedule.length > 0) {
+        return h.response({ message: 'Anda sudah menjadwalkan pasien ini.' }).code(400);
+    }
+
+    // Insert ke tabel Schedules jika validasi berhasil
     await pool.query(
         `INSERT INTO Schedules (Request_id, Coass_id, Patient_id, Appointment_date, Appointment_place) VALUES (?, ?, ?, ?, ?)`,
         [request_id, coass_id, patient_id, appointment_date, appointment_place]
@@ -33,22 +44,27 @@ const scheduleMeeting = async (request, h) => {
     return h.response({ message: 'Meeting scheduled successfully.' }).code(201);
 };
 
+
 const getPatientSchedule = async (request, h) => {
     const patient_id = request.auth.credentials.id;
 
     try {
         const query = `
             SELECT 
-                Schedules.Schedule_id, 
-                Schedules.Appointment_date, 
-                Schedules.Appointment_place, 
-                Users.Img_profile AS Coass_Img, 
-                Users.Name AS Coass_name, 
-                Users.Phone AS Coass_phone, 
-                Users.University AS Coass_university
-            FROM Schedules
-            JOIN Users ON Schedules.Coass_id = Users.Id
-            WHERE Schedules.Patient_id = ?
+                s.Schedule_id, 
+                s.Appointment_date, 
+                s.Appointment_place, 
+                u.Img_profile AS Coass_Img, 
+                u.Name AS Coass_name, 
+                u.Phone AS Coass_phone, 
+                u.University AS Coass_university,
+                r.Img_disease, 
+                r.Disease_name, 
+                r.Description
+            FROM Schedules s
+            JOIN Users u ON s.Coass_id = u.Id
+            JOIN Requests r ON s.Request_id = r.Request_id
+            WHERE s.Patient_id = ?
         `;
 
         const [schedules] = await pool.query(query, [patient_id]);
@@ -72,11 +88,12 @@ const getCoassSchedule = async (request, h) => {
                 Patients.Name AS Patient_name, 
                 Patients.Phone AS Patient_phone, 
                 Patients.Gender AS Patient_gender, 
-                Diagnose.Disease_name, 
-                Diagnose.Description
+                Requests.Img_disease, 
+                Requests.Disease_name, 
+                Requests.Description
             FROM Schedules
             JOIN Users AS Patients ON Schedules.Patient_id = Patients.Id
-            LEFT JOIN Diagnose ON Diagnose.Id_patient = Patients.Id
+            LEFT JOIN Requests ON Requests.Patient_id = Patients.Id
             WHERE Schedules.Coass_id = ?
         `;
 
