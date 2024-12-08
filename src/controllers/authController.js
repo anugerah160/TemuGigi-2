@@ -1,6 +1,7 @@
 const pool = require('../utils/database');
 const bcrypt = require('bcrypt');
 const jwtService = require('../services/jwtService');
+const nodemailer = require('nodemailer');
 
 const generateUniqueID = async (prefix) => {
     const now = new Date();
@@ -100,32 +101,73 @@ const login = async (request, h) => {
 const forgotPassword = async (request, h) => {
     const { email } = request.payload;
 
-    const query = `SELECT * FROM Users WHERE Email = ?`;
-    const [rows] = await pool.query(query, [email]);
+    try {
+        const query = `SELECT * FROM Users WHERE Email = ?`;
+        const [rows] = await pool.query(query, [email]);
 
-    if (rows.length === 0) {
-        return h.response({ message: 'Email not found' }).code(404);
+        if (rows.length === 0) {
+            return h.response({ message: 'If the email exists, a reset link has been sent' }).code(200);
+        }
+
+        // Generate reset token with expiration
+        const resetToken = jwtService.generateToken({ email }, '12h');
+        const resetUrl = `https://dental-app-service-302773936528.asia-southeast2.run.app/reset-password?token=${resetToken}`;
+
+        // Send email
+        const transporter = nodemailer.createTransport({
+            service: 'gmail', // Atur service atau SMTP server
+            auth: {
+                user: process.env.EMAIL_USER,// Email tumbal
+                pass: process.env.EMAIL_PASS,// Password
+            },
+        });
+
+        const mailOptions = {
+            from: '"Temu Gigi" Assistan Minko',
+            to: email,
+            subject: 'Password Reset Request',
+            text: `Klik link dibawah ini untuk reset password, Hanya berlaku 1jam:\n\n${resetUrl}`,
+            html: `<p>Klik link dibawah ini untuk reset password, Hanya berlaku 1jam:</p><a href="${resetUrl}">${resetUrl}</a>`,
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return h.response({ message: 'If the email exists, a reset link has been sent' }).code(200);
+    } catch (error) {
+        console.error(error);
+        return h.response({ message: 'Internal server error' }).code(500);
     }
-
-    const resetToken = jwtService.generateToken({ email });
-    return h.response({ message: 'Reset token generated', resetToken }).code(200);
 };
 
 const resetPassword = async (request, h) => {
     const { token, newPassword } = request.payload;
-
     try {
+        // Verifikasi token
         const decoded = jwtService.verifyToken(token);
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
 
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+        // Update password in database
         const query = `UPDATE Users SET Password = ? WHERE Email = ?`;
-        await pool.query(query, [hashedPassword, decoded.email]);
+        const [result] = await pool.query(query, [hashedPassword, decoded.email]);
+
+        if (result.affectedRows === 0) {
+            return h.response({ message: 'User not found' }).code(404);
+        }
 
         return h.response({ message: 'Password reset successfully' }).code(200);
     } catch (error) {
-        return h.response({ message: 'Invalid or expired token' }).code(400);
+        console.error(error);
+
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            return h.response({ message: 'Invalid or expired token' }).code(400);
+        }
+
+        return h.response({ message: 'Internal server error' }).code(500);
     }
 };
+
 
 const changePassword = async (request, h) => {
     const { oldPassword, newPassword } = request.payload;
